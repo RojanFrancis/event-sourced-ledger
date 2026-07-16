@@ -1,0 +1,14 @@
+# Maven compiled files - never push these
+target/
+
+# Mac junk
+.DS_Store
+
+# VS Code settings
+.vscode/
+
+# Application properties with passwords - IMPORTANT!
+src/main/resources/application.properties
+
+# Logs
+*.log
