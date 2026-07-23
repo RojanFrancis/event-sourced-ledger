@@ -1,0 +1,68 @@
+import { useState } from 'react'
+import { useNavigate, Link } from 'react-router-dom'
+import { login } from '../services/api'
+import { useAuth } from '../context/AuthContext'
+
+export default function Login() {
+  const [form, setForm] = useState({ email: '', password: '' })
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+  const { loginUser } = useAuth()
+  const navigate = useNavigate()
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setError('')
+    setLoading(true)
+    try {
+      const res = await login(form)
+      loginUser(res.data)
+      navigate('/dashboard')
+    } catch (err) {
+      setError(err.response?.data?.message || 'Login failed')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #00C853 0%, #00796B 100%)' }}>
+      <div style={{ width: '100%', maxWidth: '420px', padding: '0 20px' }}>
+        {/* Logo */}
+        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+          <div style={{ width: '56px', height: '56px', background: 'white', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px', fontSize: '28px' }}>₹</div>
+          <h1 style={{ color: 'white', fontSize: '24px', fontWeight: '700' }}>LedgerApp</h1>
+          <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '14px', marginTop: '4px' }}>Event-Sourced Payment Ledger</p>
+        </div>
+
+        <div className="card">
+          <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '4px' }}>Welcome back</h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginBottom: '24px' }}>Sign in to your account</p>
+
+          {error && <div className="error-msg">{error}</div>}
+
+          <form onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label className="label">Email</label>
+              <input className="input" type="email" placeholder="rojan@example.com"
+                value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} required />
+            </div>
+            <div className="form-group">
+              <label className="label">Password</label>
+              <input className="input" type="password" placeholder="••••••••"
+                value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} required />
+            </div>
+            <button className="btn btn-primary" type="submit" disabled={loading}
+              style={{ width: '100%', padding: '12px', fontSize: '15px', marginTop: '8px' }}>
+              {loading ? 'Signing in...' : 'Sign In'}
+            </button>
+          </form>
+
+          <p style={{ textAlign: 'center', marginTop: '20px', fontSize: '14px', color: 'var(--text-muted)' }}>
+            Don't have an account? <Link to="/register" style={{ color: 'var(--green)', fontWeight: '500' }}>Register</Link>
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
