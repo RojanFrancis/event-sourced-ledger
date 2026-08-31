@@ -36,4 +36,8 @@ export const deposit = (data) => api.post('/api/transactions/deposit', data)
 export const withdraw = (data) => api.post('/api/transactions/withdraw', data)
 export const transfer = (data) => api.post('/api/transactions/transfer', data)
 
+// ── AI Finance Controller ─────────────────────────────────────────────────────
+export const runReconciliation = () => api.post('/api/ai/reconcile').then(r => r.data)
+export const askSettlementAgent = (question) => api.post('/api/ai/ask', { question }).then(r => r.data)
+
 export default api
