@@ -1,263 +1,155 @@
 # Event-Sourced Payment Ledger
- 
-A fintech-grade payment ledger built with Spring Boot — models money the way real banks do, now with an **AI Finance Controller** powered by Gemini.
- 
-> 🏆 **Submitted to Razorpay AI Builder Internship 2026 — Track 04: AI Finance Controller**
- 
-Every balance change is recorded as an **immutable, append-only event**. Balances are never stored directly — they are always **derived by replaying event history**. This guarantees a complete audit trail and enables point-in-time balance queries that are impossible with traditional CRUD systems.
- 
----
- 
-## Why Event Sourcing?
- 
-In a traditional system:
- 
-```sql
-UPDATE accounts SET balance = balance - 500 WHERE id = ?
-```
- 
-If a bug corrupts this value, **the money is gone and the history is lost.**
- 
-In this system:
- 
-```sql
-INSERT INTO ledger_events (account_id, event_type, amount, ...) VALUES (...)
-```
- 
-Events are **immutable truth**. Balance can always be recomputed from history. Bugs can be detected and corrected without data loss.
- 
----
- 
-## AI Finance Controller (Track 04)
- 
-The AI layer sits on top of the event-sourced ledger and uses **Gemini 2.0 Flash** to provide intelligent financial analysis.
- 
-### Features
- 
-| Feature | Description |
+
+A fintech-style payment ledger built with **Spring Boot** and **React**. Nothing is ever edited in place: every deposit, withdrawal and transfer is stored as an immutable event, and balances are derived by replaying that history. Transfers are recorded as matching debit and credit entries (double-entry bookkeeping), and an AI finance controller powered by Gemini reconciles batches and answers questions about settlements.
+
+## Live demo
+
+| | |
 |---|---|
-| **Batch Reconciliation** | Gemini scans all ledger events to detect mismatches, duplicate entries, and balance anomalies across accounts |
-| **Settlement Q&A Agent** | Ask plain-English questions about your settlement data — Gemini reads ledger context and responds with grounded answers |
- 
-### AI Endpoints
- 
-```
-POST   /api/ai/reconcile     Run Gemini batch reconciliation over all ledger events
-POST   /api/ai/ask           Ask the settlement Q&A agent a natural language question
-```
- 
-### AI Package Structure
- 
-```
-src/main/java/com/ledger/ai/
-├── service/
-│   ├── GeminiService.java           Gemini API integration (HTTP client)
-│   └── ReconciliationService.java   Batch reconciliation logic
-├── controller/
-│   └── ReconciliationController.java  AI REST endpoints
-└── dto/
-    ├── ReconciliationRequest.java
-    └── ReconciliationResponse.java
-```
- 
----
- 
-## Core Concepts Implemented
- 
-| Concept | Implementation |
+| App | https://event-sourced-ledger-1.onrender.com |
+| API | https://event-sourced-ledger-x2r4.onrender.com |
+
+> The backend runs on a free tier and sleeps when idle, so the **first request can take up to a minute** while it wakes up. After that it responds normally.
+
+### Demo login
+
+| | |
 |---|---|
-| **Event Sourcing** | Every balance change is an immutable append-only `LedgerEvent` |
-| **Double-Entry Bookkeeping** | Every transfer creates exactly one DEBIT + one CREDIT event summing to zero |
-| **Derived Balance** | `computeCurrentBalance()` replays all events — no balance column exists |
-| **Point-in-Time Queries** | `GET /api/accounts/{id}/balance?asOf=2025-01-01` — replay events up to any timestamp |
-| **Idempotency** | Unique idempotency keys prevent duplicate transactions on retries |
-| **Overdraft Protection** | Debit operations validate sufficient funds atomically before recording |
-| **Concurrency Safety** | `@Transactional` ensures debit + credit either both succeed or both rollback |
-| **Audit Trail** | Full immutable event history per account with human-readable explanation |
-| **AI Reconciliation** | Gemini batch analysis over ledger events for anomaly detection |
-| **Settlement Agent** | Natural language Q&A over settlement data via Gemini |
- 
----
- 
-## Tech Stack
- 
+| Email | `demo@ledger.dev` |
+| Password | `Demo@12345` |
+
+> This is a shared demo account, so other visitors may change its balances. Prefer your own sandbox? Register a new account on the login page, it takes a few seconds.
+
+### What to try
+
+1. **Move money.** Open the demo account, deposit some money, then transfer between the two accounts. The total across accounts never changes on a transfer.
+2. **Read the audit trail.** Click **View Audit Trail** on an account to see the immutable events behind its balance.
+3. **Run the AI controller.** Go to **Tools**, open **Batch Reconciliation** and click **Run Reconciliation** on the sample batch. Gemini checks double-entry balance, flags anomalies and writes a summary.
+4. **Ask a question.** Switch to the **Settlement Q&A Agent** tab and ask about settlements in plain language.
+
+## Why event sourcing?
+
+- **Audit trail for free.** Every change is an append-only event, so you can always see how a balance came to be.
+- **Balances are derived, not stored.** The current balance is computed from event history, which removes a whole class of "the number drifted" bugs.
+- **Double-entry.** A transfer posts a debit on one account and a credit on the other, so totals always reconcile.
+
+## Features
+
+- JWT authentication (register and login)
+- Multiple accounts per user (savings, credit)
+- Deposit, withdraw and transfer between accounts
+- Per-account event history and statements
+- **AI Finance Controller** (Gemini 3.6 Flash):
+  - **Batch reconciliation**: submit transaction records, check double-entry balance, detect mismatches and anomalies, get an executive summary
+  - **Settlement Q&A agent**: ask questions about settlements in plain language
+
+## Architecture
+
+```mermaid
+flowchart LR
+    UI["React + Vite frontend"] -->|"REST + JWT over HTTPS"| API["Spring Boot API"]
+    API -->|"append events, replay for balances"| DB[("MySQL / TiDB event store")]
+    API -->|"reconcile and query"| AI["Gemini 3.6 Flash"]
+```
+
+## Tech stack
+
 | Layer | Technology |
 |---|---|
-| **Backend** | Java 21, Spring Boot 3.5 |
-| **AI** | Gemini 2.0 Flash (Google Generative AI) |
-| **Database** | MySQL 8.0 |
-| **ORM** | Spring Data JPA / Hibernate |
-| **Auth** | Spring Security + JWT |
-| **Frontend** | React + Vite + Axios |
-| **Containerization** | Docker + Docker Compose |
-| **Build Tool** | Maven |
- 
----
- 
-## API Reference
- 
-### Auth
- 
-```
-POST   /api/auth/register          Register new user
-POST   /api/auth/login             Login → returns JWT token
-```
- 
-### Accounts
- 
-```
-GET    /api/accounts               List my accounts
-POST   /api/accounts               Create account
-GET    /api/accounts/{id}          Get account details
-GET    /api/accounts/{id}/balance              Current derived balance
-GET    /api/accounts/{id}/balance?asOf=DATE    Point-in-time balance
-GET    /api/accounts/{id}/events               Full event history (audit trail)
-```
- 
-### Transactions
- 
-```
-POST   /api/transactions/deposit    Deposit into account
-POST   /api/transactions/withdraw   Withdraw from account
-POST   /api/transactions/transfer   Transfer between accounts
-```
- 
-### AI Finance Controller
- 
-```
-POST   /api/ai/reconcile   Run Gemini batch reconciliation over all ledger events
-POST   /api/ai/ask         Ask the settlement Q&A agent a natural language question
-```
- 
----
- 
-## Running Locally
- 
-### Prerequisites
- 
-- Java 21+
-- Maven 3.9+
-- MySQL 8.0 (or Docker)
-- Gemini API key ([get one here](https://aistudio.google.com/))
-### Option 1 — Docker (Recommended)
- 
+| Backend | Java 21, Spring Boot 3.5, Spring Security, Spring Data JPA |
+| Database | MySQL (TiDB Cloud in production) |
+| Auth | JWT |
+| AI | Google Gemini 3.6 Flash |
+| Frontend | React 19, Vite, React Router, Axios |
+| Deploy | Docker, Render (web service and static site) |
+
+## API overview
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| POST | `/api/auth/register` | Create a user and return a JWT |
+| POST | `/api/auth/login` | Log in and return a JWT |
+| POST | `/api/accounts` | Open an account |
+| GET | `/api/accounts` | List your accounts |
+| GET | `/api/accounts/{id}` | Account details |
+| GET | `/api/accounts/{id}/balance` | Balance derived from events |
+| GET | `/api/accounts/{id}/events` | Raw event history |
+| GET | `/api/accounts/{id}/statement` | Account statement |
+| POST | `/api/transactions/deposit` | Deposit |
+| POST | `/api/transactions/withdraw` | Withdraw |
+| POST | `/api/transactions/transfer` | Transfer between accounts |
+| GET | `/api/transactions/{id}` | Transaction details |
+| POST | `/api/ai/reconcile` | AI batch reconciliation |
+| POST | `/api/ai/query` | AI settlement Q&A |
+| GET | `/api/ai/health` | AI module health check |
+
+All endpoints except `/api/auth/*` require `Authorization: Bearer <token>`.
+
+## Run it locally
+
+**Prerequisites:** Java 21, Maven, Node 20+, MySQL.
+
 ```bash
-git clone https://github.com/RojanFrancis/event-sourced-ledger.git
-cd event-sourced-ledger
-docker-compose up --build
-```
- 
-App runs at `http://localhost:8080`
- 
-### Option 2 — Manual
- 
-```bash
-# 1. Create MySQL database
-mysql -u root -p
-CREATE DATABASE ledger_db;
- 
-# 2. Set your Gemini API key in application.properties
-# gemini.api.key=YOUR_KEY_HERE
- 
-# 3. Run the backend
+# 1. Database
+mysql -u root -p -e "CREATE DATABASE ledger_db;"
+
+# 2. Backend config
+cp src/main/resources/application.properties.example src/main/resources/application.properties
+# edit it: database password, jwt.secret, gemini.api.key
+
+# 3. Run the backend (http://localhost:8080)
 mvn spring-boot:run
- 
-# 4. Run the frontend
+
+# 4. Run the frontend (http://localhost:5173)
 cd frontend
 npm install
 npm run dev
 ```
- 
-Frontend runs at `http://localhost:5173`
- 
----
- 
-## Database Design
- 
-The key design decision: **`accounts` table has no `balance` column.**
- 
-```sql
--- accounts: identity only, no mutable balance
-CREATE TABLE accounts (
-    id           CHAR(36)     PRIMARY KEY,
-    owner_name   VARCHAR(255) NOT NULL,
-    account_type ENUM('SAVINGS','CURRENT','CREDIT') NOT NULL,
-    currency     VARCHAR(3)   DEFAULT 'INR',
-    status       ENUM('ACTIVE','FROZEN','CLOSED') DEFAULT 'ACTIVE',
-    created_at   TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
-);
- 
--- ledger_events: append-only, never updated or deleted
-CREATE TABLE ledger_events (
-    id               CHAR(36)       PRIMARY KEY,
-    account_id       CHAR(36)       NOT NULL,
-    transaction_id   CHAR(36)       NOT NULL,
-    event_type       ENUM('CREDIT','DEBIT') NOT NULL,
-    amount           DECIMAL(19,4)  NOT NULL,
-    balance_after    DECIMAL(19,4)  NOT NULL,
-    description      VARCHAR(500),
-    idempotency_key  VARCHAR(255)   UNIQUE NOT NULL,
-    created_at       TIMESTAMP      DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_account_id (account_id),
-    INDEX idx_created_at (created_at)
-);
-```
- 
----
- 
-## Project Structure
- 
+
+`application.properties` is git-ignored so your secrets never get committed.
+
+## Configuration
+
+The backend reads these environment variables, which override `application.properties` (this is how the production deploy is configured):
+
+| Variable | Purpose |
+|---|---|
+| `SPRING_DATASOURCE_URL` | JDBC URL of the database |
+| `SPRING_DATASOURCE_USERNAME` | Database user |
+| `SPRING_DATASOURCE_PASSWORD` | Database password |
+| `SPRING_JPA_HIBERNATE_DDL_AUTO` | `update` creates tables on first boot |
+| `JWT_SECRET` | Signing key for tokens |
+| `JWT_EXPIRATION` | Token lifetime in ms (default `86400000`, 24 h) |
+| `GEMINI_API_KEY` | Gemini API key for the AI module |
+| `CORS_ORIGINS` | Comma-separated list of allowed frontend origins |
+| `PORT` | Port the server listens on |
+
+The frontend reads `VITE_API_URL` at build time (defaults to `http://localhost:8080`).
+
+## Deployment
+
+- **Backend:** Docker web service on Render, using the `Dockerfile` in this repo (multi-stage Maven build, Java 21 JRE runtime).
+- **Database:** TiDB Cloud Starter (MySQL-compatible, free tier).
+- **Frontend:** Render static site built from `frontend/` (`npm install && npm run build`, publish `dist`) with a rewrite of `/*` to `/index.html` for React Router.
+
+## Project structure
+
 ```
 src/main/java/com/ledger/
-├── ai/
-│   ├── controller/       ReconciliationController
-│   ├── service/          GeminiService, ReconciliationService
-│   └── dto/              ReconciliationRequest, ReconciliationResponse
-├── controller/           REST API endpoints
-├── service/              LedgerService, TransactionService
-├── repository/           Spring Data JPA repositories
-├── entity/               Account, LedgerEvent, Transaction, User
-├── dto/                  Request and response objects
-├── enums/                AccountType, EventType, TransactionStatus
-├── exception/            Custom exceptions + GlobalExceptionHandler
-└── security/             JWT filter, UserDetailsService
- 
+├── config/        Security and CORS configuration
+├── controller/    Auth, account and transaction endpoints
+├── security/      JWT filter and utilities
+├── service/       Account, ledger, auth and transaction logic
+└── ai/            Gemini service and reconciliation endpoints
 frontend/src/
-├── pages/
-│   ├── AIController.jsx  AI Finance Controller (Batch Reconcile + Q&A Agent)
-│   ├── Dashboard.jsx
-│   ├── AccountDetail.jsx
-│   ├── Login.jsx
-│   └── Register.jsx
-├── components/
-│   └── Navbar.jsx
-├── services/
-│   └── api.js
-└── context/
-    └── AuthContext.jsx
+├── components/    Shared UI
+├── pages/         Login, dashboard, audit trail, AI tools
+├── services/      Axios API client
+└── context/       Auth state
 ```
- 
----
- 
-## Roadmap
- 
-- [x] Core event sourcing engine
-- [x] Double-entry transfers with atomic rollback
-- [x] JWT authentication
-- [x] Point-in-time balance queries
-- [x] Idempotency on all write operations
-- [x] Full audit trail API
-- [x] Gemini AI — batch reconciliation
-- [x] Gemini AI — settlement Q&A agent
-- [x] React frontend dashboard
-- [ ] Account snapshots for performance optimization
-- [ ] Multi-currency support
----
- 
+
 ## Author
- 
-**Rojan Francis**
-B.Tech Computer and Communication Engineering — Manipal University Jaipur (2023–2027)
- 
-[GitHub](https://github.com/RojanFrancis) · [LinkedIn](https://linkedin.com/in/rojanfrancis)
- 
+
+**Rojan Francis**, final-year B.Tech student (Computer and Communication Engineering) at Manipal University Jaipur, focused on backend engineering.
+
+GitHub: [@RojanFrancis](https://github.com/RojanFrancis)
