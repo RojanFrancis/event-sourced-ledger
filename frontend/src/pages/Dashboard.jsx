@@ -136,9 +136,9 @@ export default function Dashboard() {
               return (
                 <div key={a.id} className="card acct">
                   <div className="acct-top">
-                    <div className="ico" style={{ background: bg, color: fg }}>{a.accountType?.[0]}</div>
+                    <div className="ico" style={{ background: bg, color: fg }}>{{ SAVINGS: 'SV', CURRENT: 'CU', CREDIT: 'CR' }[a.accountType] || '?'}</div>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 800, fontSize: 14 }}>{a.accountType} account</div>
+                      <div style={{ fontWeight: 800, fontSize: 14 }}>{a.accountType[0] + a.accountType.slice(1).toLowerCase()} account</div>
                       <button className="idbtn" onClick={() => copy(a.id)} title="Copy account ID">
                         {copied === a.id ? 'Copied!' : `${a.id.slice(0, 8)}… ⧉`}
                       </button>

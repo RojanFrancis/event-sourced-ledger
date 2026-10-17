@@ -57,7 +57,8 @@ select.input { appearance: none; cursor: pointer; }
 .idbtn:hover { color: var(--text); }
 .bal { font-size: 30px; font-weight: 800; letter-spacing: -.02em; }
 .paise { font-size: .6em; font-weight: 700; opacity: .55; }
-.actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 20px 0 10px; }
+.actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 20px 0 10px; }
+.actions .btn { padding: 10px 4px; }
 .ghost { width: 100%; padding: 10px; background: none; border: 1px solid var(--border); border-radius: 10px; cursor: pointer; font: 600 13px 'Manrope', sans-serif; color: var(--text-muted); transition: background .2s, color .2s; }
 .ghost:hover { background: var(--bg); color: var(--text); }
 
