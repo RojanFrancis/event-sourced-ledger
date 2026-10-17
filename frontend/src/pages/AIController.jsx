@@ -1,6 +1,16 @@
 import { useState } from "react";
 import { runReconciliation, askSettlementAgent, getAccounts } from "../services/api";
 
+const cleanAI = (text = '') =>
+  String(text)
+    .replace(/\*\*/g, '')
+    .replace(/`/g, '')
+    .replace(/^\s*-{3,}\s*$/gm, '')
+    .replace(/^#{1,6}\s*/gm, '')
+    .replace(/^\s*[*-]\s+/gm, '• ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+
 const TAB = { RECONCILE: "reconcile", AGENT: "agent" };
 
 export default function AIController() {
@@ -72,7 +82,7 @@ export default function AIController() {
         <div style={styles.header}>
           <div style={styles.headerBadge}>AI Finance Controller</div>
           <h1 style={styles.title}>AI-Powered Ledger Tools</h1>
-          <p style={styles.subtitle}>Gemini 2.0 Flash · Track 04 — Razorpay AI Builder 2026</p>
+          <p style={styles.subtitle}>Gemini 3.6 Flash · Track 04 — Razorpay AI Builder 2026</p>
         </div>
 
         {/* Tabs */}
@@ -149,7 +159,7 @@ export default function AIController() {
                 {recoResult.aiSummary && (
                   <div style={styles.narrative}>
                     <div style={styles.narrativeLabel}>AI Executive Summary</div>
-                    <p style={styles.narrativeText}>{recoResult.aiSummary}</p>
+                    <p style={styles.narrativeText}>{cleanAI(recoResult.aiSummary)}</p>
                   </div>
                 )}
 
@@ -231,7 +241,7 @@ export default function AIController() {
                 <div style={styles.questionEcho}>Q: {agentAnswer.question}</div>
                 <div style={styles.narrative}>
                   <div style={styles.narrativeLabel}>AI Answer</div>
-                  <p style={styles.narrativeText}>{agentAnswer.answer}</p>
+                 <p style={styles.narrativeText}>{cleanAI(agentAnswer.answer)}</p>
                 </div>
                 {agentAnswer.reasoning && (
                   <div style={{ fontSize: 12, color: "#64748b", marginTop: 10 }}>
