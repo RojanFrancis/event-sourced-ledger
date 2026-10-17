@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { runReconciliation, askSettlementAgent, getAccounts } from "../services/api";
+import { runReconciliation, askSettlementAgent} from "../services/api";
 
 const cleanAI = (text = '') =>
   String(text)

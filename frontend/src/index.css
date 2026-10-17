@@ -117,3 +117,26 @@ select.input { appearance: none; cursor: pointer; }
 
 @media (max-width: 860px) { .auth { grid-template-columns: 1fr; } .auth-side { display: none; } }
 @media (max-width: 640px) { .nav-user { display: none; } .nav { padding: 0 14px; } }
+
+/* ===== Paste this at the very bottom of index.css, below the earlier additions ===== */
+
+/* Audit trail */
+.stat-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+.tabs { display: inline-flex; gap: 4px; background: #E9EDF4; padding: 4px; border-radius: 12px; }
+.tab { border: none; background: transparent; padding: 6px 14px; border-radius: 9px; font: 700 13px 'Manrope', sans-serif; color: var(--text-muted); cursor: pointer; }
+.tab.on { background: #fff; color: var(--text); box-shadow: 0 1px 3px rgba(11,18,32,.12); }
+.timeline { position: relative; margin-top: 22px; padding-left: 38px; }
+.timeline::before { content: ''; position: absolute; left: 17px; top: 8px; bottom: 8px; width: 2px; background: var(--border); }
+.ev { position: relative; display: flex; justify-content: space-between; gap: 16px; padding: 14px 16px; background: var(--card); border: 1px solid var(--border); border-radius: 14px; margin-bottom: 12px; transition: box-shadow .2s; }
+.ev:hover { box-shadow: var(--shadow); }
+.node { position: absolute; left: -38px; top: 12px; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 15px; border: 3px solid var(--card); }
+.node.cr { background: var(--green-light); color: var(--green-dark); }
+.node.dr { background: var(--red-light); color: var(--red); }
+.kind { font-size: 10px; font-weight: 800; letter-spacing: .06em; padding: 2px 8px; border-radius: 99px; margin-left: 8px; vertical-align: 2px; }
+.kind.cr { background: var(--green-light); color: var(--green-dark); }
+.kind.dr { background: var(--red-light); color: var(--red); }
+
+@media (max-width: 640px) {
+  .ev { flex-direction: column; gap: 8px; }
+  .ev .right { text-align: left !important; }
+}
