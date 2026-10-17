@@ -9,6 +9,10 @@ A fintech-style payment ledger built with **Spring Boot** and **React**. Nothing
 | App | https://event-sourced-ledger-1.onrender.com |
 | API | https://event-sourced-ledger-x2r4.onrender.com |
 
+![Dashboard](docs/dashboard.png)
+![Batch reconciliation](docs/ai-reconciliation.png)
+![Settlement Q&A agent](docs/ai-settlement.png)
+
 > The backend runs on a free tier and sleeps when idle, so the **first request can take up to a minute** while it wakes up. After that it responds normally.
 
 ### Demo login
