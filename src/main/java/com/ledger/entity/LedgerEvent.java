@@ -15,6 +15,7 @@ import java.util.UUID;
 @Entity
 @Table(name = "ledger_events", indexes = {
         @Index(name = "idx_account_id", columnList = "account_id"),
+        @Index(name = "idx_account_created", columnList = "account_id, created_at"),
         @Index(name = "idx_transaction_id", columnList = "transaction_id"),
         @Index(name = "idx_created_at", columnList = "created_at"),
         @Index(name = "idx_idempotency_key", columnList = "idempotency_key", unique = true)
