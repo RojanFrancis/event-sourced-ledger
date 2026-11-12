@@ -32,10 +32,21 @@ public class LedgerService {
      * corrupted mutable state.
      */
     public BigDecimal computeCurrentBalance(UUID accountId) {
-        List<LedgerEvent> events = ledgerEventRepository
-                .findByAccountIdOrderByCreatedAtAsc(accountId);
+        // Every event stores balance_after, written while the account row is locked,
+        // so the latest event is a snapshot of the current balance: one indexed row
+        // instead of replaying the whole history on every read and every write.
+        return ledgerEventRepository.findTopByAccountIdOrderByCreatedAtDesc(accountId)
+                .map(LedgerEvent::getBalanceAfter)
+                .orElse(BigDecimal.ZERO);
+    }
 
-        return computeBalanceFromEvents(events);
+    /**
+     * Full replay of the event history. Slower, but independent of the stored
+     * snapshots, so it can be used to verify them.
+     */
+    public BigDecimal replayBalance(UUID accountId) {
+        return computeBalanceFromEvents(
+                ledgerEventRepository.findByAccountIdOrderByCreatedAtAsc(accountId));
     }
 
     /**

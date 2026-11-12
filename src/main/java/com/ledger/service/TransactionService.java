@@ -44,18 +44,25 @@ public class TransactionService {
 
         log.info("Transfer initiated: from={}, to={}, amount={}", fromAccountId, toAccountId, amount);
 
-        // Prevent duplicate transfers on retry
+        // Validate both accounts exist and lock them. Locking in a fixed order
+        // (by id) means two opposite transfers can't deadlock each other.
+        Account fromAccount;
+        Account toAccount;
+        if (fromAccountId.compareTo(toAccountId) <= 0) {
+            fromAccount = lockAccount(fromAccountId, "Sender account not found: ");
+            toAccount = lockAccount(toAccountId, "Receiver account not found: ");
+        } else {
+            toAccount = lockAccount(toAccountId, "Receiver account not found: ");
+            fromAccount = lockAccount(fromAccountId, "Sender account not found: ");
+        }
+
+        // Prevent duplicate transfers on retry. This runs after the locks on purpose:
+        // under MySQL REPEATABLE READ the first plain SELECT fixes the transaction's
+        // snapshot, and it must not be taken before we hold the locks.
         if (transactionRepository.existsByIdempotencyKey(idempotencyKey)) {
             log.warn("Duplicate transfer blocked: {}", idempotencyKey);
             return transactionRepository.findByIdempotencyKey(idempotencyKey).orElseThrow();
         }
-
-        // Validate both accounts exist
-        Account fromAccount = accountRepository.findById(fromAccountId)
-                .orElseThrow(() -> new AccountNotFoundException("Sender account not found: " + fromAccountId));
-
-        Account toAccount = accountRepository.findById(toAccountId)
-                .orElseThrow(() -> new AccountNotFoundException("Receiver account not found: " + toAccountId));
 
         // Create the transaction record first (status = PENDING)
         Transaction transaction = Transaction.builder()
@@ -114,8 +121,7 @@ public class TransactionService {
     public Transaction deposit(UUID toAccountId, BigDecimal amount,
                                String description, String idempotencyKey) {
 
-        accountRepository.findById(toAccountId)
-                .orElseThrow(() -> new AccountNotFoundException("Account not found: " + toAccountId));
+        lockAccount(toAccountId, "Account not found: ");
 
         if (transactionRepository.existsByIdempotencyKey(idempotencyKey)) {
             return transactionRepository.findByIdempotencyKey(idempotencyKey).orElseThrow();
@@ -145,8 +151,7 @@ public class TransactionService {
     public Transaction withdraw(UUID fromAccountId, BigDecimal amount,
                                 String description, String idempotencyKey) {
 
-        accountRepository.findById(fromAccountId)
-                .orElseThrow(() -> new AccountNotFoundException("Account not found: " + fromAccountId));
+        lockAccount(fromAccountId, "Account not found: ");
 
         if (transactionRepository.existsByIdempotencyKey(idempotencyKey)) {
             return transactionRepository.findByIdempotencyKey(idempotencyKey).orElseThrow();
@@ -168,6 +173,12 @@ public class TransactionService {
         transaction.setCompletedAt(LocalDateTime.now());
         return transactionRepository.save(transaction);
     }
+
+    private Account lockAccount(UUID accountId, String notFoundMessage) {
+        return accountRepository.findByIdForUpdate(accountId)
+                .orElseThrow(() -> new AccountNotFoundException(notFoundMessage + accountId));
+    }
+
     public Transaction getTransaction(UUID id) {
     return transactionRepository.findById(id)
             .orElseThrow(() -> new RuntimeException("Transaction not found: " + id));
