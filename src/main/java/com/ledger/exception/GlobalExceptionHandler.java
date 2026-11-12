@@ -22,6 +22,16 @@ public class GlobalExceptionHandler {
         return buildError(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage());
     }
 
+    @ExceptionHandler(FlagNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleFlagNotFound(FlagNotFoundException ex) {
+        return buildError(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
+    @ExceptionHandler(RuleVersionUnavailableException.class)
+    public ResponseEntity<Map<String, Object>> handleRuleVersionUnavailable(RuleVersionUnavailableException ex) {
+        return buildError(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<Map<String, Object>> handleRuntime(RuntimeException ex) {
         return buildError(HttpStatus.BAD_REQUEST, ex.getMessage());

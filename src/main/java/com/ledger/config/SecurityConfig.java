@@ -43,6 +43,7 @@ public class SecurityConfig {
             // Public endpoints — no token needed
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/api/fraud/**").hasAuthority("ROLE_ANALYST")
                 .anyRequest().authenticated()
             )
 
