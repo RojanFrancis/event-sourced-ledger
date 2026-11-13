@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getAccounts, createAccount, deposit, withdraw, transfer } from '../services/api'
+import { getAccounts, getEvents, createAccount, deposit, withdraw, transfer } from '../services/api'
 import Navbar from '../components/Navbar'
 
 const fmt = (n) => `₹${Number(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`
+const fmtTime = (d) => new Date(d).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })
+const typeName = (t) => t ? t[0] + t.slice(1).toLowerCase() : ''
 const uid = () => `key-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`
 const TONE = { SAVINGS: ['var(--green-light)', 'var(--green-dark)'], CURRENT: ['var(--blue-light)', 'var(--blue)'], CREDIT: ['var(--violet-light)', 'var(--violet)'] }
 const TITLE = { create: 'Create new account', deposit: 'Deposit money', withdraw: 'Withdraw money', transfer: 'Transfer money' }
@@ -18,6 +20,7 @@ const Money = ({ v }) => {
 
 export default function Dashboard() {
   const [accounts, setAccounts] = useState([])
+  const [activity, setActivity] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
   const [slow, setSlow] = useState(false)
@@ -32,7 +35,14 @@ export default function Dashboard() {
 
   const load = async () => {
     setError(false)
-    try { setAccounts((await getAccounts()).data) }
+    try {
+      const list = (await getAccounts()).data
+      setAccounts(list)
+      // Recent activity across all accounts, newest first
+      const perAccount = await Promise.all(list.map((a) =>
+        getEvents(a.id).then((r) => r.data.map((ev) => ({ ...ev, accountType: a.accountType }))).catch(() => [])))
+      setActivity(perAccount.flat().sort((x, y) => new Date(y.createdAt) - new Date(x.createdAt)))
+    }
     catch { setError(true) }
     finally { setLoading(false) }
   }
@@ -99,14 +109,19 @@ export default function Dashboard() {
             <span className="pill">Across {accounts.length} account{accounts.length === 1 ? '' : 's'}</span>
           </div>
           <div className="card">
-            <div className="label">Accounts</div>
-            <div style={{ fontSize: 32, fontWeight: 800 }}>{accounts.length}</div>
-            <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>Active accounts</div>
+            <div className="label">Ledger events</div>
+            <div style={{ fontSize: 32, fontWeight: 800 }}>{activity.length}</div>
+            <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
+              {activity.length ? `Last one ${fmtTime(activity[0].createdAt)}` : 'Append-only, never edited'}
+            </div>
           </div>
           <div className="card">
-            <div className="label">System</div>
-            <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--green-dark)' }}>● Event-sourced</div>
-            <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>Immutable audit trail</div>
+            <div className="label">Integrity checks</div>
+            <ul className="checks">
+              <li>Transfers always net to zero</li>
+              <li>Overdrafts blocked by the database</li>
+              <li>Retries are idempotent</li>
+            </ul>
           </div>
         </div>
 
@@ -138,7 +153,7 @@ export default function Dashboard() {
                   <div className="acct-top">
                     <div className="ico" style={{ background: bg, color: fg }}>{{ SAVINGS: 'SV', CURRENT: 'CU', CREDIT: 'CR' }[a.accountType] || '?'}</div>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 800, fontSize: 14 }}>{a.accountType[0] + a.accountType.slice(1).toLowerCase()} account</div>
+                      <div style={{ fontWeight: 800, fontSize: 14 }}>{typeName(a.accountType)} account</div>
                       <button className="idbtn" onClick={() => copy(a.id)} title="Copy account ID">
                         {copied === a.id ? 'Copied!' : `${a.id.slice(0, 8)}… ⧉`}
                       </button>
@@ -148,7 +163,7 @@ export default function Dashboard() {
 
                   <div className="label" style={{ marginBottom: 2 }}>Current balance</div>
                   <div className="bal" style={{ color: fg }}><Money v={a.currentBalance} /></div>
-                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>Derived from event history</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>Balance after the latest ledger event</div>
 
                   <div className="actions">
                     <button className="btn btn-primary" onClick={() => open('deposit', a)}>Deposit</button>
@@ -160,6 +175,30 @@ export default function Dashboard() {
               )
             })}
           </div>
+        )}
+
+        {!loading && !error && activity.length > 0 && (
+          <section style={{ marginTop: 36 }}>
+            <h2 style={{ fontSize: 20, fontWeight: 800, marginBottom: 18 }}>Recent activity</h2>
+            <div className="card feed">
+              {activity.slice(0, 6).map((ev) => {
+                const cr = ev.eventType === 'CREDIT'
+                return (
+                  <button key={ev.id} className="feed-row" onClick={() => navigate(`/account/${ev.accountId}`)}>
+                    <span className={`node ${cr ? 'cr' : 'dr'}`} style={{ position: 'static' }}>{cr ? '↓' : '↑'}</span>
+                    <span style={{ flex: 1, minWidth: 0 }}>
+                      <span className="feed-title">{ev.description || ev.eventType}</span>
+                      <span className="feed-meta">{typeName(ev.accountType)} · {fmtTime(ev.createdAt)}</span>
+                    </span>
+                    <span style={{ textAlign: 'right' }}>
+                      <span className="feed-amt" style={{ color: cr ? 'var(--green-dark)' : 'var(--red)' }}>{cr ? '+' : '−'}{fmt(ev.amount)}</span>
+                      <span className="feed-meta">Balance {fmt(ev.balanceAfter)}</span>
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          </section>
         )}
       </div>
 
@@ -183,7 +222,11 @@ export default function Dashboard() {
                 </div>
               )}
 
-              {modal === 'transfer' && (
+              {modal === 'transfer' && accounts.length < 2 && (
+                <div className="banner" style={{ marginBottom: 16 }}>Create a second account to transfer money between them.</div>
+              )}
+
+              {modal === 'transfer' && accounts.length >= 2 && (
                 <div className="form-group">
                   <label className="label">To account</label>
                   <select className="input" value={form.toAccountId || ''} onChange={(e) => setForm({ ...form, toAccountId: e.target.value })} required>

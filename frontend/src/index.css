@@ -88,8 +88,6 @@ select.input { appearance: none; cursor: pointer; }
 }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 
-/* ===== Paste this at the very bottom of index.css ===== */
-
 /* Logo mark */
 .logo { width: 44px; height: 44px; border-radius: 13px; background: var(--green); color: #052E16; display: grid; place-items: center; font-weight: 800; font-size: 22px; box-shadow: 0 8px 18px -8px rgba(0,200,83,.7); }
 
@@ -118,8 +116,6 @@ select.input { appearance: none; cursor: pointer; }
 @media (max-width: 860px) { .auth { grid-template-columns: 1fr; } .auth-side { display: none; } }
 @media (max-width: 640px) { .nav-user { display: none; } .nav { padding: 0 14px; } }
 
-/* ===== Paste this at the very bottom of index.css, below the earlier additions ===== */
-
 /* Audit trail */
 .stat-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
 .tabs { display: inline-flex; gap: 4px; background: #E9EDF4; padding: 4px; border-radius: 12px; }
@@ -139,4 +135,29 @@ select.input { appearance: none; cursor: pointer; }
 @media (max-width: 640px) {
   .ev { flex-direction: column; gap: 8px; }
   .ev .right { text-align: left !important; }
+}
+/* Navbar brand */
+.brand { display: flex; align-items: center; gap: 10px; background: none; border: none; cursor: pointer; padding: 0; color: var(--text); font: inherit; }
+.brand-name { font-weight: 800; font-size: 18px; letter-spacing: -.02em; }
+
+/* Dashboard: integrity checks */
+.checks { list-style: none; display: grid; gap: 7px; margin-top: 4px; }
+.checks li { font-size: 13px; font-weight: 600; display: flex; gap: 8px; align-items: center; }
+.checks li::before { content: '✓'; width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; flex: none; font-size: 11px; font-weight: 800; background: var(--green-light); color: var(--green-dark); }
+
+/* Dashboard: recent activity */
+.feed { padding: 6px; }
+.feed-row { width: 100%; display: flex; align-items: center; gap: 14px; padding: 12px 14px; background: none; border: none; border-radius: 12px; cursor: pointer; text-align: left; font: inherit; color: inherit; transition: background .15s; }
+.feed-row:hover { background: var(--bg); }
+.feed-row + .feed-row { border-top: 1px solid var(--border); border-radius: 0; }
+.feed-row:hover + .feed-row { border-top-color: transparent; }
+.feed-title { display: block; font-weight: 700; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.feed-meta { display: block; font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+.feed-amt { display: block; font-weight: 800; font-size: 15px; }
+
+@media (max-width: 640px) {
+  .brand-name, .nav-avatar { display: none !important; }
+  .nav-left { gap: 10px !important; }
+  .nav-link { padding: 7px 8px; }
+  .nav-right .btn { padding: 7px 12px !important; }
 }
