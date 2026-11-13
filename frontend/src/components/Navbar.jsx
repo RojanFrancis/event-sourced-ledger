@@ -15,11 +15,11 @@ export default function Navbar() {
 
   return (
     <nav className="nav">
-      <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={() => navigate('/dashboard')}>
-          <div className="logo" style={{ width: 36, height: 36, fontSize: 18, borderRadius: 10 }}>₹</div>
-          <span style={{ fontWeight: 800, fontSize: 18, letterSpacing: '-.02em' }}>LedgerApp</span>
-        </div>
+      <div className="nav-left" style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+        <button className="brand" onClick={() => navigate('/dashboard')} aria-label="LedgerApp home">
+          <span className="logo" style={{ width: 36, height: 36, fontSize: 18, borderRadius: 10 }}>₹</span>
+          <span className="brand-name">LedgerApp</span>
+        </button>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           <button className={link('/dashboard')} onClick={() => navigate('/dashboard')}>Dashboard</button>
@@ -29,12 +29,12 @@ export default function Navbar() {
         </div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+      <div className="nav-right" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
         <div className="nav-user" style={{ textAlign: 'right' }}>
           <div style={{ fontSize: 14, fontWeight: 700 }}>{user?.fullName}</div>
           <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{user?.email}</div>
         </div>
-        <div style={{ width: 36, height: 36, background: 'var(--green-light)', borderRadius: '50%', display: 'grid', placeItems: 'center', color: 'var(--green-dark)', fontWeight: 800 }}>
+        <div className="nav-avatar" style={{ width: 36, height: 36, background: 'var(--green-light)', borderRadius: '50%', display: 'grid', placeItems: 'center', color: 'var(--green-dark)', fontWeight: 800 }}>
           {user?.fullName?.charAt(0)}
         </div>
         <button className="btn btn-outline" onClick={handleLogout} style={{ padding: '7px 16px' }}>Logout</button>
