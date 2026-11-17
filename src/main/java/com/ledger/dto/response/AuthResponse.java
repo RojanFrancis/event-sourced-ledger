@@ -14,4 +14,6 @@ public class AuthResponse {
     private String email;
     private String fullName;
     private String message;
+    // True if the user may open the fraud review screen
+    private boolean analyst;
 }

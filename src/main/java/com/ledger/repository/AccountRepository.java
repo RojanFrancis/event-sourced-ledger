@@ -4,6 +4,8 @@ import com.ledger.entity.Account;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -24,4 +26,10 @@ public interface AccountRepository extends JpaRepository<Account, UUID> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select a from Account a where a.id = :id")
     Optional<Account> findByIdForUpdate(@Param("id") UUID id);
+
+    // Demo data only: lets simulated customers look as old as real ones would be.
+    @Modifying
+    @Transactional
+    @Query("update Account a set a.createdAt = :createdAt where a.id = :id")
+    int backdate(@Param("id") UUID id, @Param("createdAt") java.time.LocalDateTime createdAt);
 }

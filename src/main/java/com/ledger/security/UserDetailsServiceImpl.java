@@ -16,6 +16,7 @@ import java.util.List;
 public class UserDetailsServiceImpl implements UserDetailsService {
 
     private final UserRepository userRepository;
+    private final AnalystAccess analystAccess;
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
@@ -25,7 +26,9 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         return new org.springframework.security.core.userdetails.User(
                 user.getEmail(),
                 user.getPassword(),
-                List.of(new SimpleGrantedAuthority(user.getRole()))
+                analystAccess.isAnalyst(user.getEmail(), user.getRole()) && !AnalystAccess.ROLE.equals(user.getRole())
+                        ? List.of(new SimpleGrantedAuthority(user.getRole()), new SimpleGrantedAuthority(AnalystAccess.ROLE))
+                        : List.of(new SimpleGrantedAuthority(user.getRole()))
         );
     }
 }

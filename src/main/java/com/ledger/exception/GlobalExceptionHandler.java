@@ -23,6 +23,16 @@ public class GlobalExceptionHandler {
         return buildError(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage());
     }
 
+    @ExceptionHandler(FlagNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleFlagNotFound(FlagNotFoundException ex) {
+        return buildError(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
+    @ExceptionHandler(RuleVersionUnavailableException.class)
+    public ResponseEntity<Map<String, Object>> handleRuleVersionUnavailable(RuleVersionUnavailableException ex) {
+        return buildError(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
     // A database constraint rejected the write (for example a balance below zero).
     // Don't echo the SQL error back to the client.
     @ExceptionHandler(DataIntegrityViolationException.class)

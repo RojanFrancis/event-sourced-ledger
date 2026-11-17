@@ -40,4 +40,13 @@ export const transfer = (data) => api.post('/api/transactions/transfer', data)
 export const runReconciliation = (data) => api.post('/api/ai/reconcile', data).then(r => r.data)
 export const askSettlementAgent = (accountId, question) => api.post('/api/ai/query', { accountId, question }).then(r => r.data)
 
+// ── TraceLedger: mule-account review (analysts only) ─────────────────────────
+export const getFlags = () => api.get('/api/fraud/flags').then(r => r.data)
+export const getFlagEvidence = (id) => api.get(`/api/fraud/flags/${id}/evidence`).then(r => r.data)
+export const replayFlag = (id) => api.get(`/api/fraud/flags/${id}/replay`).then(r => r.data)
+export const decideFlag = (id, decision, note) => api.post(`/api/fraud/flags/${id}/decisions`, { decision, note }).then(r => r.data)
+export const getEvaluation = () => api.get('/api/fraud/evaluation').then(r => r.data)
+export const getModelInfo = () => api.get('/api/fraud/model').then(r => r.data)
+export const runMuleRing = () => api.post('/api/fraud/demo/mule-ring').then(r => r.data)
+
 export default api

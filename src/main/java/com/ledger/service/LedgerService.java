@@ -5,6 +5,7 @@ import com.ledger.enums.EventType;
 import com.ledger.exception.InsufficientFundsException;
 import com.ledger.repository.LedgerEventRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -19,6 +20,7 @@ import java.util.UUID;
 public class LedgerService {
 
     private final LedgerEventRepository ledgerEventRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * THE CORE METHOD — derives current balance by replaying all events.
@@ -108,6 +110,7 @@ public class LedgerService {
                 .build();
 
         LedgerEvent saved = ledgerEventRepository.save(event);
+        eventPublisher.publishEvent(new LedgerEventRecorded(saved.getId()));
         log.info("CREDIT recorded: accountId={}, amount={}, newBalance={}", accountId, amount, newBalance);
         return saved;
     }
@@ -149,6 +152,7 @@ public class LedgerService {
                 .build();
 
         LedgerEvent saved = ledgerEventRepository.save(event);
+        eventPublisher.publishEvent(new LedgerEventRecorded(saved.getId()));
         log.info("DEBIT recorded: accountId={}, amount={}, newBalance={}", accountId, amount, newBalance);
         return saved;
     }

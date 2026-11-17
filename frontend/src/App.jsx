@@ -5,6 +5,7 @@ import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
 import AccountDetail from './pages/AccountDetail'
 import AIController from './pages/AIController'
+import FraudReview from './pages/FraudReview'
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth()
@@ -29,6 +30,7 @@ export default function App() {
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/account/:id" element={<ProtectedRoute><AccountDetail /></ProtectedRoute>} />
           <Route path="/ai" element={<ProtectedRoute><AIController /></ProtectedRoute>} />
+          <Route path="/fraud" element={<ProtectedRoute><FraudReview /></ProtectedRoute>} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

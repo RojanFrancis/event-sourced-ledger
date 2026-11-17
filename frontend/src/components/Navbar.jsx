@@ -26,6 +26,9 @@ export default function Navbar() {
           <button className={link('/ai')} onClick={() => navigate('/ai')}>
             <span className="ai-tag">AI</span>Tools
           </button>
+          {user?.analyst && (
+            <button className={link('/fraud')} onClick={() => navigate('/fraud')}>Mule review</button>
+          )}
         </div>
       </div>
 
