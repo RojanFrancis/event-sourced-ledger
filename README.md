@@ -50,6 +50,7 @@ A fintech-style payment ledger built with **Spring Boot** and **React**. Nothing
 - **AI Finance Controller** (Gemini 3.6 Flash):
   - **Batch reconciliation**: submit transaction records, check double-entry balance, detect mismatches and anomalies, get an executive summary
   - **Settlement Q&A agent**: ask questions about settlements in plain language
+- **TraceLedger mule-account detection**: two versioned rules and an Isolation Forest screen every payment, every flag is explained and can be replayed exactly as it was raised, and analysts record hold, clear or escalate decisions. Measured on a held-out simulation: 88% recall, 29% precision. See [docs/traceledger.md](docs/traceledger.md)
 
 ## Architecture
 

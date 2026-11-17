@@ -70,10 +70,12 @@ class TraceLedgerFlowTest {
         }
         transactionService.transfer(mule.getId(), exit.getId(), new BigDecimal("14000"), "cash out", key());
 
-        Map<String, FraudFlag> flags = flagRepository.findAll().stream()
+        List<FraudFlag> onMule = flagRepository.findByAccountIdOrderByCreatedAtDesc(mule.getId());
+        Map<String, FraudFlag> flags = onMule.stream()
                 .collect(Collectors.toMap(FraudFlag::getRuleId, f -> f));
-        assertThat(flags).containsOnlyKeys("FAN_IN_NEW_ACCOUNT", "RAPID_PASS_THROUGH");
-        assertThat(flags.values()).allMatch(f -> f.getAccountId().equals(mule.getId()));
+        assertThat(flags).containsOnlyKeys("FAN_IN_NEW_ACCOUNT", "RAPID_PASS_THROUGH", "ANOMALY_MODEL");
+        assertThat(flags.get("ANOMALY_MODEL").getModelVersion()).startsWith("iforest-v1");
+        assertThat(flags.get("RAPID_PASS_THROUGH").getModelVersion()).isNull();
 
         // Activity after the flags must not change what a replay reproduces.
         transactionService.deposit(mule.getId(), new BigDecimal("50000"), "later deposit", key());
@@ -92,6 +94,16 @@ class TraceLedgerFlowTest {
                 .andExpect(jsonPath("$.matches").value(true))
                 .andExpect(jsonPath("$.replayedReasons[0]").value("5 different accounts sent money in the last 24 hours"));
 
+        mockMvc.perform(get("/api/fraud/flags/{id}/replay", flags.get("ANOMALY_MODEL").getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.matches").value(true));
+
+        mockMvc.perform(get("/api/fraud/flags/{id}/evidence", passThrough.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(6))
+                .andExpect(jsonPath("$[5].direction").value("DEBIT"))
+                .andExpect(jsonPath("$[5].counterparty").value("E***"));
+
         mockMvc.perform(post("/api/fraud/flags/{id}/decisions", passThrough.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"decision\":\"HOLD\",\"note\":\"Pass-through within minutes\"}"))
@@ -100,12 +112,10 @@ class TraceLedgerFlowTest {
                 .andExpect(jsonPath("$.decisions[0].analyst").value("analyst@bank.test"))
                 .andExpect(jsonPath("$.decisions[0].ruleVersion").value(1));
 
-        // The later incoming transfer is screened too: five distinct senders are still within 24 hours.
-        mockMvc.perform(get("/api/fraud/flags"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(3))
-                .andExpect(jsonPath("$[0].ruleId").value("FAN_IN_NEW_ACCOUNT"))
-                .andExpect(jsonPath("$[0].status").value("OPEN"));
+        // The later incoming transfer still has five senders within 24 hours, but it falls inside the
+        // cooldown, so the analyst keeps one fan-in case rather than one per payment.
+        assertThat(flagRepository.findByAccountIdOrderByCreatedAtDesc(mule.getId()))
+                .filteredOn(f -> f.getRuleId().equals("FAN_IN_NEW_ACCOUNT")).hasSize(1);
     }
 
     @Test

@@ -2,7 +2,13 @@ package com.ledger.fraud.service;
 
 import com.ledger.exception.FlagNotFoundException;
 import com.ledger.exception.RuleVersionUnavailableException;
+import com.ledger.entity.Account;
+import com.ledger.entity.LedgerEvent;
+import com.ledger.entity.Transaction;
+import com.ledger.enums.EventType;
+import com.ledger.fraud.Masking;
 import com.ledger.fraud.dto.DecisionRequest;
+import com.ledger.fraud.dto.EvidenceResponse;
 import com.ledger.fraud.dto.FlagResponse;
 import com.ledger.fraud.dto.ReplayResponse;
 import com.ledger.fraud.entity.AnalystDecision;
@@ -13,6 +19,9 @@ import com.ledger.fraud.rules.MuleRule;
 import com.ledger.fraud.rules.RuleContext;
 import com.ledger.fraud.rules.RuleHit;
 import com.ledger.fraud.rules.RuleRegistry;
+import com.ledger.repository.AccountRepository;
+import com.ledger.repository.LedgerEventRepository;
+import com.ledger.repository.TransactionRepository;
 import com.ledger.service.LedgerService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -33,6 +42,9 @@ public class FlagReviewService {
     private final RuleRegistry ruleRegistry;
     private final RuleContextBuilder contextBuilder;
     private final LedgerService ledgerService;
+    private final LedgerEventRepository ledgerEventRepository;
+    private final TransactionRepository transactionRepository;
+    private final AccountRepository accountRepository;
 
     @Transactional(readOnly = true)
     public List<FlagResponse> recentFlags() {
@@ -70,6 +82,10 @@ public class FlagReviewService {
         MuleRule rule = ruleRegistry.find(flag.getRuleId(), flag.getRuleVersion())
                 .orElseThrow(() -> new RuleVersionUnavailableException(
                         "Rule " + flag.getRuleId() + " v" + flag.getRuleVersion() + " is not available to replay"));
+        if (!java.util.Objects.equals(rule.modelVersion(), flag.getModelVersion())) {
+            throw new RuleVersionUnavailableException("Model " + flag.getModelVersion()
+                    + " is not loaded (running " + rule.modelVersion() + "), so this flag cannot be replayed exactly");
+        }
         RuleContext context = contextBuilder.build(flag.getTriggerEventId(), rule.lookback());
         RuleHit hit = rule.evaluate(context).orElse(null);
 
@@ -86,6 +102,32 @@ public class FlagReviewService {
                 flag.getScore(), replayedScore, original.reasons(), replayedReasons,
                 original.evidenceTransactionIds(), replayedEvidence, context.history().size(),
                 ledgerService.computeBalanceAsOf(flag.getAccountId(), flag.getAsOf()));
+    }
+
+    /** The flag's evidence transactions as the flagged account saw them, oldest first. */
+    @Transactional(readOnly = true)
+    public List<EvidenceResponse> evidence(UUID flagId) {
+        FraudFlag flag = load(flagId);
+        List<UUID> ids = FlagResponse.of(flag, List.of()).evidenceTransactionIds();
+        Map<UUID, Transaction> transactions = transactionRepository.findAllById(ids).stream()
+                .collect(Collectors.toMap(Transaction::getId, t -> t));
+        List<EvidenceResponse> rows = new java.util.ArrayList<>();
+        for (UUID id : ids) {
+            Transaction tx = transactions.get(id);
+            for (LedgerEvent event : ledgerEventRepository.findByTransactionId(id)) {
+                if (!event.getAccountId().equals(flag.getAccountId())) {
+                    continue;
+                }
+                UUID other = tx == null ? null
+                        : event.getEventType() == EventType.CREDIT ? tx.getFromAccountId() : tx.getToAccountId();
+                String otherName = other == null ? (event.getEventType() == EventType.CREDIT ? "cash deposit" : "cash withdrawal")
+                        : accountRepository.findById(other).map(Account::getOwnerName).map(Masking::name).orElse("unknown");
+                rows.add(new EvidenceResponse(id, event.getCreatedAt(), event.getEventType().name(), event.getAmount(),
+                        other, otherName, event.getBalanceAfter()));
+            }
+        }
+        rows.sort(java.util.Comparator.comparing(EvidenceResponse::at));
+        return rows;
     }
 
     private FraudFlag load(UUID flagId) {

@@ -2,6 +2,7 @@ package com.ledger.fraud.service;
 
 import com.ledger.fraud.entity.FraudFlag;
 import com.ledger.fraud.repository.FraudFlagRepository;
+import com.ledger.fraud.rules.FlagPolicy;
 import com.ledger.fraud.rules.MuleRule;
 import com.ledger.fraud.rules.RuleContext;
 import com.ledger.fraud.rules.RuleHit;
@@ -21,7 +22,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * Screens each ledger event with the active rules once the payment has committed. Screening only
+ * Screens each ledger event with the active rules once the payment has committed. A rule that has
+ * flagged an account stays quiet on that account for {@link FlagPolicy#COOLDOWN}. Screening only
  * raises flags for an analyst; it never blocks or reverses a payment, and a failure here is logged
  * rather than surfaced to the payer.
  */
@@ -49,7 +51,9 @@ public class FraudScreeningService {
         RuleContext context = contextBuilder.build(ledgerEventId, ruleRegistry.maxLookback());
         List<FraudFlag> raised = new ArrayList<>();
         for (MuleRule rule : ruleRegistry.active()) {
-            if (flagRepository.existsByTriggerEventIdAndRuleIdAndRuleVersion(ledgerEventId, rule.id(), rule.version())) {
+            if (flagRepository.existsByTriggerEventIdAndRuleIdAndRuleVersion(ledgerEventId, rule.id(), rule.version())
+                    || flagRepository.existsByAccountIdAndRuleIdAndRuleVersionAndAsOfAfter(context.accountId(),
+                    rule.id(), rule.version(), context.trigger().at().minus(FlagPolicy.COOLDOWN))) {
                 continue;
             }
             rule.evaluate(context).ifPresent(hit -> raised.add(flagRepository.save(toFlag(context, rule, hit))));
@@ -65,6 +69,7 @@ public class FraudScreeningService {
                 .triggerEventId(context.trigger().eventId())
                 .ruleId(rule.id())
                 .ruleVersion(rule.version())
+                .modelVersion(rule.modelVersion())
                 .score(hit.score())
                 .reasons(String.join("\n", hit.reasons()))
                 .evidenceTransactionIds(hit.evidenceTransactionIds().stream()

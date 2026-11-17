@@ -1,5 +1,6 @@
 package com.ledger.service;
 
+import com.ledger.security.AnalystAccess;
 import com.ledger.dto.request.LoginRequest;
 import com.ledger.dto.request.RegisterRequest;
 import com.ledger.dto.response.AuthResponse;
@@ -22,6 +23,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final AuthenticationManager authenticationManager;
+    private final AnalystAccess analystAccess;
 
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
@@ -45,6 +47,7 @@ public class AuthService {
                 .email(user.getEmail())
                 .fullName(user.getFullName())
                 .message("Registration successful")
+                .analyst(analystAccess.isAnalyst(user.getEmail(), user.getRole()))
                 .build();
     }
 
@@ -67,6 +70,7 @@ public class AuthService {
                 .email(user.getEmail())
                 .fullName(user.getFullName())
                 .message("Login successful")
+                .analyst(analystAccess.isAnalyst(user.getEmail(), user.getRole()))
                 .build();
     }
 }

@@ -18,4 +18,9 @@ public interface MuleRule {
     Duration lookback();
 
     Optional<RuleHit> evaluate(RuleContext context);
+
+    /** The trained model this detector uses, or null for a hand-written rule. Stored on every flag it raises. */
+    default String modelVersion() {
+        return null;
+    }
 }

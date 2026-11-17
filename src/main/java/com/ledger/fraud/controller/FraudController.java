@@ -1,6 +1,7 @@
 package com.ledger.fraud.controller;
 
 import com.ledger.fraud.dto.DecisionRequest;
+import com.ledger.fraud.dto.EvidenceResponse;
 import com.ledger.fraud.dto.FlagResponse;
 import com.ledger.fraud.dto.ReplayResponse;
 import com.ledger.fraud.service.FlagReviewService;
@@ -41,6 +42,11 @@ public class FraudController {
                                                @Valid @RequestBody DecisionRequest request,
                                                Authentication authentication) {
         return ResponseEntity.ok(reviewService.decide(id, request, authentication.getName()));
+    }
+
+    @GetMapping("/{id}/evidence")
+    public ResponseEntity<List<EvidenceResponse>> evidence(@PathVariable UUID id) {
+        return ResponseEntity.ok(reviewService.evidence(id));
     }
 
     @GetMapping("/{id}/replay")
