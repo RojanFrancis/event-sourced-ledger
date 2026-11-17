@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.Check;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
@@ -20,6 +21,9 @@ import java.util.UUID;
         @Index(name = "idx_created_at", columnList = "created_at"),
         @Index(name = "idx_idempotency_key", columnList = "idempotency_key", unique = true)
 })
+// Last line of defence against overdrafts: the database itself rejects any event
+// that would leave an account below zero, even if a code path skips the service check.
+@Check(name = "chk_balance_after_non_negative", constraints = "balance_after >= 0")
 @Data
 @Builder
 @NoArgsConstructor

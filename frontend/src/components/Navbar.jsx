@@ -15,11 +15,11 @@ export default function Navbar() {
 
   return (
     <nav className="nav">
-      <div className="nav-left" style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-        <div className="nav-home" style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={() => navigate('/dashboard')}>
-          <div className="logo" style={{ width: 36, height: 36, fontSize: 18, borderRadius: 10 }}>₹</div>
-          <span className="nav-brand" style={{ fontWeight: 800, fontSize: 18, letterSpacing: '-.02em' }}>LedgerApp</span>
-        </div>
+      <div className="nav-left" style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+        <button className="brand" onClick={() => navigate('/dashboard')} aria-label="LedgerApp home">
+          <span className="logo" style={{ width: 36, height: 36, fontSize: 18, borderRadius: 10 }}>₹</span>
+          <span className="brand-name">LedgerApp</span>
+        </button>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           <button className={link('/dashboard')} onClick={() => navigate('/dashboard')}>Dashboard</button>

@@ -1,5 +1,6 @@
 package com.ledger.exception;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -30,6 +31,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(RuleVersionUnavailableException.class)
     public ResponseEntity<Map<String, Object>> handleRuleVersionUnavailable(RuleVersionUnavailableException ex) {
         return buildError(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    // A database constraint rejected the write (for example a balance below zero).
+    // Don't echo the SQL error back to the client.
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleDataIntegrity(DataIntegrityViolationException ex) {
+        return buildError(HttpStatus.CONFLICT, "The transaction was rejected by a ledger integrity check.");
     }
 
     @ExceptionHandler(RuntimeException.class)
